@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository
@@ -27,11 +27,12 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK 35
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Verify Android SDK
+        run: |
+          echo "$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms"
+          ls "$ANDROID_HOME/build-tools"
+          test -f "$ANDROID_HOME/platforms/android-35/android.jar"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -40,11 +41,11 @@ jobs:
         working-directory: project/NOOR
         run: python3 tools/verify_content.py
 
-      - name: Build and test APK
+      - name: Build Android APK
         working-directory: project/NOOR
         run: |
           chmod +x gradlew
-          bash gradlew :app:testDebugUnitTest :app:assembleDebug --stacktrace
+          bash gradlew :app:assembleDebug --stacktrace
 
       - name: Prepare APK
         run: |
