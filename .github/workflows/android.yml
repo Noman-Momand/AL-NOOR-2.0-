@@ -1,0 +1,59 @@
+
+name: Build AL NOOR 2.0 APK
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract AL NOOR project
+        run: |
+          unzip -q AL-NOOR-2.0-Source-Preview.zip -d project
+          ls -la project/NOOR
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 35
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Verify Quran and Islamic content
+        working-directory: project/NOOR
+        run: python3 tools/verify_content.py
+
+      - name: Build and test APK
+        working-directory: project/NOOR
+        run: |
+          chmod +x gradlew
+          bash gradlew :app:testDebugUnitTest :app:assembleDebug --stacktrace
+
+      - name: Prepare APK
+        run: |
+          mkdir -p output
+          cp project/NOOR/app/build/outputs/apk/debug/app-debug.apk output/AL-NOOR-2.0-Preview.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AL-NOOR-2.0-APK
+          path: output/AL-NOOR-2.0-Preview.apk
+          if-no-files-found: error
